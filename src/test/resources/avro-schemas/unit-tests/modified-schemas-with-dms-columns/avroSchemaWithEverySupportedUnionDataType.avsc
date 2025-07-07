@@ -1,0 +1,96 @@
+{
+  "type": "record",
+  "namespace": "prisons",
+  "service": "prisonestate",
+  "version": "1.0.0",
+  "name": "somename",
+  "description": "",
+  "contacts": {
+    "team": "https://dsdmoj.atlassian.net/wiki/spaces/DPR/overview?homepageId=4015489077",
+    "slack": "#ask_dpr"
+  },
+  "database": {
+    "type": "csv",
+    "version": "",
+    "name": ""
+  },
+  "fields": [
+    {
+      "name": "Op",
+      "type": ["null", "string"],
+      "nullable": false
+    },
+    {
+      "name": "_timestamp",
+      "type": ["null", "string"],
+      "nullable": false
+    },
+    {
+      "name": "a_string_column",
+      "type": ["null", "string"],
+      "nullable": false,
+      "key": "primary"
+    },
+    {
+      "name": "a_string_column2",
+      "type": ["string", "null"],
+      "nullable": false,
+      "key": "primary"
+    },
+    {
+      "name": "an_int_column",
+      "type": ["null", "int"],
+      "nullable": true
+    },
+    {
+      "name": "an_int_column2",
+      "type": ["int", "null"],
+      "nullable": true
+    },
+    {
+      "name": "a_long_column",
+      "type": ["null", "long"],
+      "nullable": false
+    },
+    {
+      "name": "a_long_column2",
+      "type": ["long", "null"],
+      "nullable": false
+    },
+    {
+      "name": "a_float_column",
+      "type": ["null", "float"],
+      "nullable": false
+    },
+    {
+      "name": "a_float_column2",
+      "type": ["float", "null"],
+      "nullable": false
+    },
+    {
+      "name": "a_double_column",
+      "type": ["null", "double"],
+      "nullable": true
+    },
+    {
+      "name": "a_double_column2",
+      "type": ["double", "null"],
+      "nullable": true
+    },
+    {
+      "name": "a_boolean_column",
+      "type": ["null", "boolean"],
+      "nullable": true
+    },
+    {
+      "name": "a_boolean_column2",
+      "type": ["boolean", "null"],
+      "nullable": true
+    },
+    {
+      "name": "checkpoint_col",
+      "type": ["null", "string"],
+      "nullable": true
+    }
+  ]
+}

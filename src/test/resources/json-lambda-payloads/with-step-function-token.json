@@ -1,0 +1,15 @@
+{
+  "stepFunctionToken": "some-token",
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "landing-processing-bucket-name"
+        },
+        "object": {
+          "key": "any/number/of/prefixes"
+        }
+      }
+    }
+  ]
+}

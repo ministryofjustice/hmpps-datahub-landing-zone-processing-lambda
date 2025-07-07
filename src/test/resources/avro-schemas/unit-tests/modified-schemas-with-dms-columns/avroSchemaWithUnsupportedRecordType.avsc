@@ -1,0 +1,45 @@
+{
+  "type": "record",
+  "namespace": "prisons",
+  "service": "prisonestate",
+  "version": "1.0.0",
+  "name": "somename",
+  "description": "",
+  "contacts": {
+    "team": "https://dsdmoj.atlassian.net/wiki/spaces/DPR/overview?homepageId=4015489077",
+    "slack": "#ask_dpr"
+  },
+  "database": {
+    "type": "csv",
+    "version": "",
+    "name": ""
+  },
+  "fields": [
+    {
+      "name": "Op",
+      "type": ["null", "string"],
+      "nullable": false
+    },
+    {
+      "name": "_timestamp",
+      "type": ["null", "string"],
+      "nullable": false
+    },
+    {
+      "name": "unsupported_field",
+      "type": {
+        "name": "some_record",
+        "type": "record",
+        "fields" : [
+          {"name": "a", "type": "long"},
+          {"name": "b", "type": "string"}
+        ]
+      }
+    },
+    {
+      "name": "checkpoint_col",
+      "type": ["null", "string"],
+      "nullable": true
+    }
+  ]
+}

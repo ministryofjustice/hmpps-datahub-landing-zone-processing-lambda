@@ -1,6 +1,11 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "8.3.0"
-  kotlin("plugin.spring") version "2.1.21"
+  kotlin("jvm") version "2.0.21"
+  id("jacoco")
+  id("com.github.johnrengelman.shadow") version "8.1.1"
+  id("org.barfuin.gradle.jacocolog") version "3.1.0"
+  id("org.owasp.dependencycheck")  version "8.2.1"
 }
 
 configurations {
@@ -8,15 +13,27 @@ configurations {
 }
 
 dependencies {
-  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:1.4.7")
-  implementation("org.springframework.boot:spring-boot-starter-webflux")
-  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
+  implementation("com.amazonaws:aws-lambda-java-core:1.2.3")
+  implementation("software.amazon.awssdk:sfn:2.31.74")
+  implementation("software.amazon.awssdk:s3:2.31.62")
+  implementation("org.apache.parquet:parquet-avro:1.15.2")
+  implementation("com.jsoizo:kotlin-csv-jvm:1.10.0")
+  // We need hadoop in implementation scope since it won't be provided in a lambda
+  // It is required for parquet-avro to use Avro schemas to convert to Parquet
+  implementation("org.apache.hadoop:hadoop-common:3.3.6")
 
-  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:1.4.7")
-  testImplementation("org.wiremock:wiremock-standalone:3.13.1")
-  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.30") {
-    exclude(group = "io.swagger.core.v3")
-  }
+
+  //test
+  testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.1")
+  testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
+  testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.1")
+  testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+  testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.1")
+  // Hadoop MapReduce is required in Tets scope for converting parquet bytes back to Avro records
+  testImplementation("org.apache.hadoop:hadoop-mapreduce-client-core:3.3.6")
+}
+java {
+  toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
 kotlin {
@@ -26,5 +43,44 @@ kotlin {
 tasks {
   withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
+  }
+}
+repositories {
+  mavenLocal()
+  mavenCentral()
+}
+tasks.test {
+  finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+  dependsOn(tasks.test)
+}
+
+java.sourceCompatibility = JavaVersion.VERSION_21
+
+tasks.jar {
+  enabled = true
+}
+
+tasks.assemble {
+  dependsOn(tasks.shadowJar)
+}
+
+java {
+  withSourcesJar()
+  withJavadocJar()
+}
+
+tasks {
+  withType<Test> {
+    useJUnitPlatform()
+  }
+  withType<ShadowJar> {
+    // <WORKAROUND for="https://github.com/johnrengelman/shadow/issues/448">
+    configurations = listOf(
+      project.configurations.implementation.get(),
+      project.configurations.runtimeOnly.get()
+    ).onEach { it.isCanBeResolved = true }
   }
 }

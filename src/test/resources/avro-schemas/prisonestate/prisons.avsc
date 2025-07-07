@@ -1,0 +1,45 @@
+{
+  "type": "record",
+  "namespace": "prisons",
+  "service": "prisonestate",
+  "version": "1.0.0",
+  "name": "prisons",
+  "description": "",
+  "contacts": {
+    "team": "https://dsdmoj.atlassian.net/wiki/spaces/DPR/overview?homepageId=4015489077",
+    "slack": "#ask_dpr"
+  },
+  "database": {
+    "type": "csv",
+    "version": "",
+    "name": ""
+  },
+  "fields": [
+    {
+      "name": "prison_id",
+      "type": "int",
+      "nullable": false,
+      "key": "primary"
+    },
+    {
+      "name": "prison_code",
+      "type": "string",
+      "nullable": false
+    },
+    {
+      "name": "prison",
+      "type": "string",
+      "nullable": false
+    },
+    {
+      "name": "operational_capacity",
+      "type": "int",
+      "nullable": false
+    },
+    {
+      "name": "staff_headcount",
+      "type": "int",
+      "nullable": true
+    }
+  ]
+}

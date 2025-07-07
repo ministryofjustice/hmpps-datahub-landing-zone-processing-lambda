@@ -1,0 +1,11 @@
+{
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "landing-processing-bucket-name"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "stepFunctionToken": "some-token",
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "landing-processing-bucket-name"
+        },
+        "object": {
+          "key": "prisonestate/prisons/Prison Estate(Prisons).csv"
+        }
+      }
+    }
+  ]
+}

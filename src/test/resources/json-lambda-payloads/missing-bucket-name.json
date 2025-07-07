@@ -1,0 +1,11 @@
+{
+  "Records": [
+    {
+      "s3": {
+        "object": {
+          "key": "any/number/of/prefixes"
+        }
+      }
+    }
+  ]
+}
