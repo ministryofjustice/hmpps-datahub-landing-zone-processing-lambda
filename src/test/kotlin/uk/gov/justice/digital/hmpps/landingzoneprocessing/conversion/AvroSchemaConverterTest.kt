@@ -11,11 +11,6 @@ class AvroSchemaConverterTest {
     private val underTest = AvroSchemaConverter
 
     @Test
-    fun `should fail to test CI`() {
-        throw AssertionError("Failed")
-    }
-
-    @Test
     fun `should convert fields to nullable union type`() {
         val actual = underTest.convert(inputSchema)
 
