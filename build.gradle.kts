@@ -15,7 +15,7 @@ configurations {
 dependencies {
   implementation("com.amazonaws:aws-lambda-java-core:1.2.3")
   implementation("software.amazon.awssdk:sfn:2.31.74")
-  implementation("software.amazon.awssdk:s3:2.31.62")
+  implementation("software.amazon.awssdk:s3:2.31.78")
   implementation("org.apache.parquet:parquet-avro:1.15.2")
   implementation("com.jsoizo:kotlin-csv-jvm:1.10.0")
   // We need hadoop in implementation scope since it won't be provided in a lambda
