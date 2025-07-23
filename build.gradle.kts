@@ -24,9 +24,9 @@ dependencies {
 
 
   //test
-  testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.1")
-  testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
-  testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.1")
+  testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.13.4")
+  testImplementation("org.junit.jupiter:junit-jupiter-api:5.13.4")
+  testImplementation("org.junit.jupiter:junit-jupiter-params:5.13.4")
   testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
   testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.1")
   // Hadoop MapReduce is required in Tets scope for converting parquet bytes back to Avro records
