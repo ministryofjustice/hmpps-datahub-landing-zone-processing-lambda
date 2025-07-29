@@ -14,7 +14,7 @@ configurations {
 
 dependencies {
   implementation("com.amazonaws:aws-lambda-java-core:1.2.3")
-  implementation("software.amazon.awssdk:sfn:2.31.74")
+  implementation("software.amazon.awssdk:sfn:2.32.10")
   implementation("software.amazon.awssdk:s3:2.31.62")
   implementation("org.apache.parquet:parquet-avro:1.15.2")
   implementation("com.jsoizo:kotlin-csv-jvm:1.10.0")
