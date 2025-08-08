@@ -35,7 +35,6 @@ workflows:
           context:
             - hmpps-reporting-common
             - hmpps-reporting-orb
-          deps_checksum_file: build.gradle.kts
           cache_key: "hmpps-datahub-landing-zone-processing-lambda-v2"
 
   owasp-security:
