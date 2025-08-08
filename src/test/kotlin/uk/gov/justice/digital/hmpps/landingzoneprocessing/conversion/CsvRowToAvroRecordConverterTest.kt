@@ -16,10 +16,10 @@ class CsvRowToAvroRecordConverterTest {
         ZoneOffset.UTC
     ))
 
-    private val schema = avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithEverySupportedUnionDataType.avsc")
+    private val schema = avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithEverySupportedUnionWithBasicDataType.avsc")
 
     @Test
-    fun `should convert every supported union type`() {
+    fun `should convert every supported basic type in a union`() {
         val row = listOf(
             "str", "str2", "1", "2", "3", "4", "5.0", "6.0", "7.0", "8.0", "true", "false"
         )
@@ -41,6 +41,22 @@ class CsvRowToAvroRecordConverterTest {
             assertEquals(8.0, actual.get("a_double_column2") as Double)
             assertEquals(true, actual.get("a_boolean_column") as Boolean)
             assertEquals(false, actual.get("a_boolean_column2") as Boolean)
+        }
+    }
+
+    @Test
+    fun `should convert logical timestamp type in a union`() {
+        val schemaWithLogicalTimestamp = avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithTimestampLogicalType.avsc")
+        val row = listOf(
+            "1234"
+        )
+
+        val result = underTest.toAvro(schemaWithLogicalTimestamp, row)
+
+        assertTrue(result is SuccessfulConversion)
+        if (result is SuccessfulConversion) {
+            val actual = result.avro
+            assertEquals(1234L, actual.get("my_timestamp") as Long)
         }
     }
 

@@ -14,7 +14,7 @@ class CsvToParquetBytesConverterTest {
 
 
     @Test
-    fun `should convert multiple CSV rows to avro, including null conversions with non-nullable types in schema`() {
+    fun `should convert multiple CSV rows to parquet, including null conversions with non-nullable types in schema`() {
         val underTest = CsvToParquetBytesConverter()
 
         val csvRows = listOf(
@@ -53,7 +53,7 @@ class CsvToParquetBytesConverterTest {
     }
 
     @Test
-    fun `should convert multiple CSV rows to avro with nullable union types in schema`() {
+    fun `should convert multiple CSV rows to parquet with nullable union types in schema`() {
         val underTest = CsvToParquetBytesConverter()
 
         val csvRows = listOf(
@@ -61,7 +61,7 @@ class CsvToParquetBytesConverterTest {
             listOf("another string", "", "", "", "", "", "", "", "", "", "", ""),
         )
 
-        val result = underTest.toParquetByteArray(avroSchemaFromResources("avro-schemas/unit-tests/input-schemas-without-dms-columns/avroSchemaWithEverySupportedUnionDataType.avsc"), csvRows)
+        val result = underTest.toParquetByteArray(avroSchemaFromResources("avro-schemas/unit-tests/input-schemas-without-dms-columns/avroSchemaWithEverySupportedUnionWithBasicDataType.avsc"), csvRows)
         assertTrue(result is SuccessfulCsvToParquetBytesConversion)
         if (result is SuccessfulCsvToParquetBytesConversion) {
             // Convert back to Avro for assertions
@@ -98,6 +98,28 @@ class CsvToParquetBytesConverterTest {
             assertNull(row2Result.get("a_double_column2"))
             assertNull(row2Result.get("a_boolean_column"))
             assertNull(row2Result.get("a_boolean_column2"))
+        }
+    }
+
+    @Test
+    fun `should convert long with logicalType timestamp-micros to parquet`() {
+        val underTest = CsvToParquetBytesConverter()
+
+        val csvRows = listOf(
+            listOf("12345")
+        )
+
+        val result = underTest.toParquetByteArray(avroSchemaFromResources("avro-schemas/unit-tests/input-schemas-without-dms-columns/avroSchemaWithTimestampLogicalType.avsc"), csvRows)
+        assertTrue(result is SuccessfulCsvToParquetBytesConversion)
+        if (result is SuccessfulCsvToParquetBytesConversion) {
+            // Convert back to Avro for assertions
+            val resultAvro = parquetBytesToAvro(result.bytes)
+            assertEquals(1, resultAvro.size)
+
+            val row1Result = resultAvro[0]
+            assertEquals(12345L, row1Result.get("my_timestamp") as Long)
+            val myTimestampField = row1Result.schema.fields[2]
+            assertEquals("timestamp-micros", myTimestampField.schema().types[1].objectProps.getValue("logicalType"))
         }
     }
 
