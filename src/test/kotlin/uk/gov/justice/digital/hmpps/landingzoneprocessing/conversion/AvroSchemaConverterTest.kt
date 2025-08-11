@@ -11,10 +11,53 @@ class AvroSchemaConverterTest {
     private val underTest = AvroSchemaConverter
 
     @Test
-    fun `should convert fields to nullable union type`() {
+    fun `should add nullable Op as the 1st field in the schema`() {
         val actual = underTest.convert(inputSchema)
 
         assertEquals(7, actual.fields.size)
+        val firstField = actual.fields[0]
+
+        assertEquals("Op", firstField.name())
+        assertEquals(UNION, firstField.schema().type)
+        assertEquals(2, firstField.schema().types.size)
+        assertEquals(NULL, firstField.schema().types[0].type)
+        assertEquals(STRING, firstField.schema().types[1].type)
+    }
+
+    @Test
+    fun `should add nullable _timestamp as the 2nd field in the schema`() {
+        val actual = underTest.convert(inputSchema)
+
+        assertEquals(7, actual.fields.size)
+        val secondField = actual.fields[1]
+
+        assertEquals("_timestamp", secondField.name())
+        assertEquals(UNION, secondField.schema().type)
+        assertEquals(2, secondField.schema().types.size)
+        assertEquals(NULL, secondField.schema().types[0].type)
+        assertEquals(STRING, secondField.schema().types[1].type)
+    }
+
+    @Test
+    fun `should add nullable checkpoint_col as the last field in the schema`() {
+        val actual = underTest.convert(inputSchema)
+
+        assertEquals(7, actual.fields.size)
+        val field7 = actual.fields[6]
+
+        assertEquals("checkpoint_col", field7.name())
+        assertEquals(UNION, field7.schema().type)
+        assertEquals(2, field7.schema().types.size)
+        assertEquals(NULL, field7.schema().types[0].type)
+        assertEquals(STRING, field7.schema().types[1].type)
+    }
+
+    @Test
+    fun `should convert fields with basic types to nullable union type`() {
+        val actual = underTest.convert(inputSchema)
+
+        assertEquals(7, actual.fields.size)
+        // fields[0] and fields[1] are special DMS columns tested in a different test
         val field1 = actual.fields[2]
         val field4 = actual.fields[3]
         val field6 = actual.fields[5]
@@ -22,20 +65,36 @@ class AvroSchemaConverterTest {
         assertEquals("string_pk", field1.name())
         assertEquals(UNION, field1.schema().type)
         assertEquals(2, field1.schema().types.size)
-        assertTrue(field1.schema().types[0].type == NULL)
-        assertTrue(field1.schema().types[1].type == STRING)
+        assertEquals(NULL, field1.schema().types[0].type)
+        assertEquals(STRING, field1.schema().types[1].type)
 
         assertEquals("our_nullable_column", field4.name())
         assertEquals(UNION, field4.schema().type)
         assertEquals(2, field4.schema().types.size)
-        assertTrue(field4.schema().types[0].type == NULL)
-        assertTrue(field4.schema().types[1].type == INT)
+        assertEquals(NULL, field4.schema().types[0].type)
+        assertEquals(INT, field4.schema().types[1].type)
 
         assertEquals("non_nullable_column", field6.name())
         assertEquals(UNION, field6.schema().type)
         assertEquals(2, field6.schema().types.size)
-        assertTrue(field6.schema().types[0].type == NULL)
-        assertTrue(field6.schema().types[1].type == STRING)
+        assertEquals(NULL, field6.schema().types[0].type)
+        assertEquals(STRING, field6.schema().types[1].type)
+    }
+
+    @Test
+    fun `should convert fields with logical types to nullable union type`() {
+        val actual = underTest.convert(avroSchemaFromResources("avro-schemas/unit-tests/input-schemas-without-dms-columns/avroSchemaWithTimestampLogicalType.avsc"))
+
+        assertEquals(4, actual.fields.size)
+        val field1 = actual.fields[2]
+
+        assertEquals("my_timestamp", field1.name())
+        assertEquals(UNION, field1.schema().type)
+        assertEquals(2, field1.schema().types.size)
+        assertEquals(NULL, field1.schema().types[0].type)
+        assertEquals(LONG, field1.schema().types[1].type)
+        assertEquals("timestamp-micros", field1.schema().types[1].objectProps.getValue("logicalType"))
+        assertFalse(field1.objectProps.getValue("nullable") as Boolean)
     }
 
     @Test
@@ -48,8 +107,8 @@ class AvroSchemaConverterTest {
         assertEquals("avro_optional_column", field5.name())
         assertEquals(UNION, field5.schema().type)
         assertEquals(2, field5.schema().types.size)
-        assertTrue(field5.schema().types[0].type == NULL)
-        assertTrue(field5.schema().types[1].type == INT)
+        assertEquals(NULL, field5.schema().types[0].type)
+        assertEquals(INT, field5.schema().types[1].type)
     }
 
     @Test
@@ -83,48 +142,6 @@ class AvroSchemaConverterTest {
         assertEquals("somename", actual.name)
         assertEquals("prisonestate", actual.objectProps["service"])
         assertEquals("1.0.0", actual.objectProps["version"])
-    }
-
-    @Test
-    fun `should add nullable Op as the 1st field in the schema`() {
-        val actual = underTest.convert(inputSchema)
-
-        assertEquals(7, actual.fields.size)
-        val firstField = actual.fields[0]
-
-        assertEquals("Op", firstField.name())
-        assertEquals(UNION, firstField.schema().type)
-        assertEquals(2, firstField.schema().types.size)
-        assertTrue(firstField.schema().types[0].type == NULL)
-        assertTrue(firstField.schema().types[1].type == STRING)
-    }
-
-    @Test
-    fun `should add nullable _timestamp as the 2nd field in the schema`() {
-        val actual = underTest.convert(inputSchema)
-
-        assertEquals(7, actual.fields.size)
-        val secondField = actual.fields[1]
-
-        assertEquals("_timestamp", secondField.name())
-        assertEquals(UNION, secondField.schema().type)
-        assertEquals(2, secondField.schema().types.size)
-        assertTrue(secondField.schema().types[0].type == NULL)
-        assertTrue(secondField.schema().types[1].type == STRING)
-    }
-
-    @Test
-    fun `should add nullable checkpoint_col as the last field in the schema`() {
-        val actual = underTest.convert(inputSchema)
-
-        assertEquals(7, actual.fields.size)
-        val field7 = actual.fields[6]
-
-        assertEquals("checkpoint_col", field7.name())
-        assertEquals(UNION, field7.schema().type)
-        assertEquals(2, field7.schema().types.size)
-        assertTrue(field7.schema().types[0].type == NULL)
-        assertTrue(field7.schema().types[1].type == STRING)
     }
 
 }
