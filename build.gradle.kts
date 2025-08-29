@@ -20,7 +20,7 @@ dependencies {
   implementation("com.jsoizo:kotlin-csv-jvm:1.10.0")
   // We need hadoop in implementation scope since it won't be provided in a lambda
   // It is required for parquet-avro to use Avro schemas to convert to Parquet
-  implementation("org.apache.hadoop:hadoop-common:3.3.6")
+  implementation("org.apache.hadoop:hadoop-common:3.4.2")
 
 
   //test
@@ -30,7 +30,7 @@ dependencies {
   testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
   testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.1")
   // Hadoop MapReduce is required in Tets scope for converting parquet bytes back to Avro records
-  testImplementation("org.apache.hadoop:hadoop-mapreduce-client-core:3.3.6")
+  testImplementation("org.apache.hadoop:hadoop-mapreduce-client-core:3.4.2")
 }
 java {
   toolchain.languageVersion.set(JavaLanguageVersion.of(21))
