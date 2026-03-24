@@ -11,12 +11,13 @@ import uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion.CsvToParque
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion.CsvToParquetBytesConverter.CsvToParquetBytesConversionResult.SuccessfulCsvToParquetBytesConversion
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion.avroparquet.ByteArrayOutputStreamOutputFile
 import java.io.ByteArrayOutputStream
-import java.time.Clock
 
 /**
  * Converts in-memory CSV to Parquet
  */
-class CsvToParquetBytesConverter(private val clock: Clock = Clock.systemUTC()) {
+class CsvToParquetBytesConverter(
+    private val recordConverter: CsvRowToAvroRecordConverter
+) {
 
     /**
      * Represents the result of a CsvToParquetBytesConverter conversion toParquetByteArray
@@ -52,7 +53,7 @@ class CsvToParquetBytesConverter(private val clock: Clock = Clock.systemUTC()) {
 
         writer.use {
             for (row in csvRows) {
-                val maybeRecord = CsvRowToAvroRecordConverter(clock).toAvro(modifiedSchema, row)
+                val maybeRecord = recordConverter.toAvro(modifiedSchema, row)
                 when (maybeRecord) {
                     is SuccessfulConversion -> writer.write(maybeRecord.avro)
                     is DiscardedRow -> {} // no op - we don't write anything for a purposely discarded row

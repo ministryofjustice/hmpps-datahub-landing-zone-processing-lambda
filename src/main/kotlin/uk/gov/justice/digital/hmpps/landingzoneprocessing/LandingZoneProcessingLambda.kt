@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.Context
 import com.amazonaws.services.lambda.runtime.RequestHandler
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.client.AwsS3Client
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.client.AwsStepFunctionsClient
+import uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion.CsvRowToAvroRecordConverter
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion.CsvToParquetBytesConverter
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.service.LandingZoneProcessingService
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.service.S3FileService
@@ -57,7 +58,7 @@ class LandingZoneProcessingLambda : RequestHandler<MutableMap<String, Any>, Stri
                     stepFunctionService = StepFunctionService(stepFunctionClient = stepFunctionsClient),
                     singleFileProcessor = SingleFileProcessor(
                         s3FileService = s3FileService,
-                        csvToParquet = CsvToParquetBytesConverter(),
+                        csvToParquet = CsvToParquetBytesConverter(CsvRowToAvroRecordConverter(context.logger)),
                         logger = context.logger,
                         env = Env
                     )

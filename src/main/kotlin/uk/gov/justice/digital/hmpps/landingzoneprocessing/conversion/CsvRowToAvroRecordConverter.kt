@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion
 
+import com.amazonaws.services.lambda.runtime.LambdaLogger
+import com.amazonaws.services.lambda.runtime.logging.LogLevel.WARN
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericRecord
@@ -17,7 +19,10 @@ import java.time.temporal.ChronoField
 /**
  * Converts a CSV row to an Avro GenericRecord using the provided schema.
  */
-class CsvRowToAvroRecordConverter(private val clock: Clock = Clock.systemUTC()) {
+class CsvRowToAvroRecordConverter(
+    private val logger: LambdaLogger,
+    private val clock: Clock = Clock.systemUTC()
+) {
 
     companion object {
         // USed to indicate an insert by the DMS
@@ -104,11 +109,17 @@ class CsvRowToAvroRecordConverter(private val clock: Clock = Clock.systemUTC()) 
                         Schema.Type.FLOAT -> resultRecord.put(columnName, stringVal.toFloat())
                         Schema.Type.DOUBLE -> resultRecord.put(columnName, stringVal.toDouble())
                         Schema.Type.BOOLEAN -> resultRecord.put(columnName, stringVal.toBooleanStrict())
-                        else -> return UnsupportedTypeFailure("We do not support type $type for field $columnName")
+                        else -> {
+                            val msg = "We do not support type $type for field $columnName"
+                            logger.log(msg, WARN)
+                            return UnsupportedTypeFailure(msg)
+                        }
                     }
                 } catch (e: IllegalArgumentException) {
+                    val msg = "$columnName could not be converted to the type in the schema. Exception message: ${e.message}"
+                    logger.log(msg, WARN)
                     return TypeConversionFailure(
-                        "$columnName could not be converted to the type in the schema. Exception message: ${e.message}",
+                        msg,
                         e
                     )
                 }
