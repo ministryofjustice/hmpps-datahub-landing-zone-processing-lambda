@@ -1,7 +1,11 @@
 package uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion
 
+import com.amazonaws.services.lambda.runtime.LambdaLogger
+import com.amazonaws.services.lambda.runtime.logging.LogLevel
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.mock
+import org.mockito.kotlin.verify
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion.CsvRowToAvroRecordConverter.CsvRowToAvroConversionResult.*
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.testhelpers.TestHelpers.avroSchemaFromResources
 import java.time.Clock
@@ -11,12 +15,17 @@ import java.time.ZoneOffset
 
 class CsvRowToAvroRecordConverterTest {
 
-    private val underTest = CsvRowToAvroRecordConverter(Clock.fixed(
-        Instant.parse("2024-03-02T12:34:56.123456Z"),
-        ZoneOffset.UTC
-    ))
+    private val mockedLambdaLogger = mock<LambdaLogger>()
 
-    private val schema = avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithEverySupportedUnionWithBasicDataType.avsc")
+    private val underTest = CsvRowToAvroRecordConverter(
+        mockedLambdaLogger, Clock.fixed(
+            Instant.parse("2024-03-02T12:34:56.123456Z"),
+            ZoneOffset.UTC
+        )
+    )
+
+    private val schema =
+        avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithEverySupportedUnionWithBasicDataType.avsc")
 
     @Test
     fun `should convert every supported basic type in a union`() {
@@ -46,7 +55,8 @@ class CsvRowToAvroRecordConverterTest {
 
     @Test
     fun `should convert logical timestamp type in a union`() {
-        val schemaWithLogicalTimestamp = avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithTimestampLogicalType.avsc")
+        val schemaWithLogicalTimestamp =
+            avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithTimestampLogicalType.avsc")
         val row = listOf(
             "1234"
         )
@@ -96,10 +106,12 @@ class CsvRowToAvroRecordConverterTest {
             "str", "str2", "1", "2", "3", "4", "5.0", "6.0", "7.0", "8.0", "true", "false"
         )
 
-        val result = CsvRowToAvroRecordConverter(Clock.fixed(
-            Instant.parse("2024-03-02T12:34:56.123456Z"),
-            ZoneId.of("Asia/Kolkata")
-        )).toAvro(schema, row)
+        val result = CsvRowToAvroRecordConverter(
+            mockedLambdaLogger, Clock.fixed(
+                Instant.parse("2024-03-02T12:34:56.123456Z"),
+                ZoneId.of("Asia/Kolkata")
+            )
+        ).toAvro(schema, row)
 
         assertTrue(result is SuccessfulConversion)
         if (result is SuccessfulConversion) {
@@ -173,6 +185,20 @@ class CsvRowToAvroRecordConverterTest {
             assertEquals(true, actual.get("a_boolean_column") as Boolean)
             assertEquals(false, actual.get("a_boolean_column2") as Boolean)
         }
+    }
+
+    @Test
+    fun `should log TypeConversionFailures`() {
+        val row = listOf(
+            "str", "str2", "not an int", "2", "3", "4", "5.0", "6.0", "7.0", "8.0", "true", "false"
+        )
+
+        val result = underTest.toAvro(schema, row)
+        assertTrue(result is TypeConversionFailure)
+        verify(mockedLambdaLogger).log(
+            "an_int_column could not be converted to the type in the schema. Exception message: For input string: \"not an int\"",
+            LogLevel.WARN
+        )
     }
 
     @Test
@@ -257,8 +283,23 @@ class CsvRowToAvroRecordConverterTest {
     }
 
     @Test
+    fun `should log UnsupportedTypeFailure`() {
+        val schema =
+            avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithUnsupportedUnionBytesType.avsc")
+        val row = listOf(
+            "1"
+        )
+
+        val result = underTest.toAvro(schema, row)
+
+        assertTrue(result is UnsupportedTypeFailure)
+        verify(mockedLambdaLogger).log("We do not support type UNION for field unsupported_union_type", LogLevel.WARN)
+    }
+
+    @Test
     fun `should give unsupported type failure for unsupported type within avro union`() {
-        val schema = avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithUnsupportedUnionBytesType.avsc")
+        val schema =
+            avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithUnsupportedUnionBytesType.avsc")
         val row = listOf(
             "1"
         )
@@ -270,7 +311,8 @@ class CsvRowToAvroRecordConverterTest {
 
     @Test
     fun `should throw for schema with unsupported type outside of a union`() {
-        val schema = avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithUnsupportedRecordType.avsc")
+        val schema =
+            avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithUnsupportedRecordType.avsc")
 
         val row = listOf("str")
 
@@ -281,7 +323,8 @@ class CsvRowToAvroRecordConverterTest {
 
     @Test
     fun `should throw for schema with non nullable types`() {
-        val schema = avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithNonNullableDataTypes.avsc")
+        val schema =
+            avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithNonNullableDataTypes.avsc")
         val row = listOf(
             "str", "str2", "1", "2", "1.0", "2.0", "true"
         )
@@ -293,7 +336,8 @@ class CsvRowToAvroRecordConverterTest {
 
     @Test
     fun `should throw for schema with unsupported union type with more than 2 types`() {
-        val schema = avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithUnsupportedUnionTypeWithMoreThan2Types.avsc")
+        val schema =
+            avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithUnsupportedUnionTypeWithMoreThan2Types.avsc")
 
         val row = listOf("str")
 
@@ -304,7 +348,8 @@ class CsvRowToAvroRecordConverterTest {
 
     @Test
     fun `should throw for schema with unsupported union type with less than 2 types`() {
-        val schema = avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithUnsupportedUnionTypeWithLessThan2Types.avsc")
+        val schema =
+            avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithUnsupportedUnionTypeWithLessThan2Types.avsc")
 
         val row = listOf("str")
 
@@ -315,7 +360,8 @@ class CsvRowToAvroRecordConverterTest {
 
     @Test
     fun `should throw for schema with unsupported union type with no null type`() {
-        val schema = avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithUnsupportedUnionTypeWithNoNullType.avsc")
+        val schema =
+            avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaWithUnsupportedUnionTypeWithNoNullType.avsc")
 
         val row = listOf("str")
 
@@ -326,7 +372,8 @@ class CsvRowToAvroRecordConverterTest {
 
     @Test
     fun `should throw for schema missing Op field`() {
-        val schema = avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaMissingOpColumn.avsc")
+        val schema =
+            avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaMissingOpColumn.avsc")
 
         val row = listOf("str")
 
@@ -337,7 +384,8 @@ class CsvRowToAvroRecordConverterTest {
 
     @Test
     fun `should throw for schema missing _timestamp field`() {
-        val schema = avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaMissingTimestampColumn.avsc")
+        val schema =
+            avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaMissingTimestampColumn.avsc")
 
         val row = listOf("str")
 
@@ -348,7 +396,8 @@ class CsvRowToAvroRecordConverterTest {
 
     @Test
     fun `should throw for schema missing checkpoint_col field`() {
-        val schema = avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaMissingCheckpointColumn.avsc")
+        val schema =
+            avroSchemaFromResources("avro-schemas/unit-tests/modified-schemas-with-dms-columns/avroSchemaMissingCheckpointColumn.avsc")
 
         val row = listOf("str")
 

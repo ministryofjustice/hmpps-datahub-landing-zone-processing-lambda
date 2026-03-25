@@ -1,7 +1,9 @@
 package uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion
 
+import com.amazonaws.services.lambda.runtime.LambdaLogger
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.mock
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion.CsvToParquetBytesConverter.CsvToParquetBytesConversionResult.FailedCsvToParquetBytesConversion
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion.CsvToParquetBytesConverter.CsvToParquetBytesConversionResult.SuccessfulCsvToParquetBytesConversion
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.testhelpers.TestHelpers.avroSchemaFromResources
@@ -12,11 +14,12 @@ import java.time.ZoneOffset
 
 class CsvToParquetBytesConverterTest {
 
+    private val mockLambdaLogger = mock<LambdaLogger>()
+    private val underTest = CsvToParquetBytesConverter(CsvRowToAvroRecordConverter(mockLambdaLogger))
+
 
     @Test
     fun `should convert multiple CSV rows to parquet, including null conversions with non-nullable types in schema`() {
-        val underTest = CsvToParquetBytesConverter()
-
         val csvRows = listOf(
             listOf("str", "str2", "1", "2", "3", "4", "true"),
             listOf("another string", "", "", "", "", "", ""),
@@ -54,8 +57,6 @@ class CsvToParquetBytesConverterTest {
 
     @Test
     fun `should convert multiple CSV rows to parquet with nullable union types in schema`() {
-        val underTest = CsvToParquetBytesConverter()
-
         val csvRows = listOf(
             listOf("str", "str2", "1", "2", "3", "4", "5.0", "6.0", "7.0", "8.0", "true", "false"),
             listOf("another string", "", "", "", "", "", "", "", "", "", "", ""),
@@ -103,8 +104,6 @@ class CsvToParquetBytesConverterTest {
 
     @Test
     fun `should convert long with logicalType timestamp-micros to parquet`() {
-        val underTest = CsvToParquetBytesConverter()
-
         val csvRows = listOf(
             listOf("12345")
         )
@@ -125,8 +124,6 @@ class CsvToParquetBytesConverterTest {
 
     @Test
     fun `should include additional DMS Op column hardcoded to Insert`() {
-        val underTest = CsvToParquetBytesConverter()
-
         val csvRows = listOf(
             listOf("str", "str2", "1", "2", "3", "4", "true")
         )
@@ -151,13 +148,13 @@ class CsvToParquetBytesConverterTest {
             Instant.parse("2021-02-01T12:34:56.123456Z"),
             ZoneOffset.UTC
         )
-        val underTest = CsvToParquetBytesConverter(clock = stubClock)
+        val underTestWithStubClock = CsvToParquetBytesConverter(CsvRowToAvroRecordConverter(mockLambdaLogger, clock = stubClock))
 
         val csvRows = listOf(
             listOf("str", "str2", "1", "2", "3", "4", "true")
         )
 
-        val result = underTest.toParquetByteArray(avroSchemaFromResources("avro-schemas/unit-tests/input-schemas-without-dms-columns/avroSchemaWithNonNullableDataTypes.avsc"), csvRows)
+        val result = underTestWithStubClock.toParquetByteArray(avroSchemaFromResources("avro-schemas/unit-tests/input-schemas-without-dms-columns/avroSchemaWithNonNullableDataTypes.avsc"), csvRows)
         assertTrue(result is SuccessfulCsvToParquetBytesConversion)
         if (result is SuccessfulCsvToParquetBytesConversion) {
             // Convert back to Avro for assertions
@@ -172,8 +169,6 @@ class CsvToParquetBytesConverterTest {
 
     @Test
     fun `should include additional DMS checkpoint_col column hardcoded to null`() {
-        val underTest = CsvToParquetBytesConverter()
-
         val csvRows = listOf(
             listOf("str", "str2", "1", "2", "3", "4", "true")
         )
@@ -194,8 +189,6 @@ class CsvToParquetBytesConverterTest {
 
     @Test
     fun `should discard accidental empty rows and columns`() {
-        val underTest = CsvToParquetBytesConverter()
-
         val csvRows = listOf(
             listOf("str", "str2", "1", "2", "3", "4", "false", "extra column"),
             listOf("", "", "", "", "", "", ""),
@@ -228,8 +221,6 @@ class CsvToParquetBytesConverterTest {
 
     @Test
     fun `should report failure for type mismatch`() {
-        val underTest = CsvToParquetBytesConverter()
-
         val csvRows = listOf(
             listOf("str", "str2", "shouldbeint", "2", "3", "4", "true")
         )
@@ -240,8 +231,6 @@ class CsvToParquetBytesConverterTest {
 
     @Test
     fun `should report failure for unsupported type within avro union`() {
-        val underTest = CsvToParquetBytesConverter()
-
         val csvRows = listOf(
             listOf("1")
         )

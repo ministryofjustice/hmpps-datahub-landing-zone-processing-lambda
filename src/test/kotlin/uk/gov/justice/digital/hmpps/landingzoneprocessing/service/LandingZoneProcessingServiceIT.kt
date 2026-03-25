@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.landingzoneprocessing.Env.SCHEMA_REGISTRY_BU
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.Env.VIOLATIONS_BUCKET_ENV_KEY
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.Env.VIOLATIONS_PATH_ENV_KEY
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.client.AwsS3Client
+import uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion.CsvRowToAvroRecordConverter
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion.CsvToParquetBytesConverter
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.testhelpers.TestHelpers.jsonLambdaPayloadFromResources
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.testhelpers.TestHelpers.parquetBytesToAvro
@@ -62,7 +63,7 @@ class LandingZoneProcessingServiceIT {
             mockStepFunctionService,
             SingleFileProcessor(
                 s3FileService,
-                CsvToParquetBytesConverter(),
+                CsvToParquetBytesConverter(CsvRowToAvroRecordConverter(mockLogger)),
                 mockLogger,
                 mockEnv
             )
