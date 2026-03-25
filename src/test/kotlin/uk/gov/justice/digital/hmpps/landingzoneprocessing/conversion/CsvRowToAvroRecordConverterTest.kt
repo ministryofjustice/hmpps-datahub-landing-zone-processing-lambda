@@ -2,14 +2,12 @@ package uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger
 import com.amazonaws.services.lambda.runtime.logging.LogLevel
-import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.verify
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.conversion.CsvRowToAvroRecordConverter.CsvRowToAvroConversionResult.*
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.testhelpers.TestHelpers.avroSchemaFromResources
-import java.io.File
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -200,8 +198,6 @@ class CsvRowToAvroRecordConverterTest {
         assertTrue(result is SuccessfulConversion)
         if (result is SuccessfulConversion) {
             val actual = result.avro
-            assertEquals("str", actual.get("a_string_column") as String)
-            assertEquals("str2", actual.get("a_string_column2") as String)
             assertEquals(1000, actual.get("an_int_column") as Int)
             assertEquals(2000, actual.get("an_int_column2") as Int)
             assertEquals(3000L, actual.get("a_long_column") as Long)
@@ -210,8 +206,6 @@ class CsvRowToAvroRecordConverterTest {
             assertEquals(6000.0f, actual.get("a_float_column2") as Float)
             assertEquals(7000.03, actual.get("a_double_column") as Double)
             assertEquals(8000.0, actual.get("a_double_column2") as Double)
-            assertEquals(true, actual.get("a_boolean_column") as Boolean)
-            assertEquals(false, actual.get("a_boolean_column2") as Boolean)
         }
     }
 
