@@ -188,6 +188,28 @@ class CsvRowToAvroRecordConverterTest {
     }
 
     @Test
+    fun `should convert int, long, float and double formatted with commas`() {
+        val row = listOf(
+            "str", "str2", "1,000", "2,000", "3,000", "4,000", "5,000.00", "6,000", "7,000.03", "8,000", "true", "false"
+        )
+
+        val result = underTest.toAvro(schema, row)
+
+        assertTrue(result is SuccessfulConversion)
+        if (result is SuccessfulConversion) {
+            val actual = result.avro
+            assertEquals(1000, actual.get("an_int_column") as Int)
+            assertEquals(2000, actual.get("an_int_column2") as Int)
+            assertEquals(3000L, actual.get("a_long_column") as Long)
+            assertEquals(4000L, actual.get("a_long_column2") as Long)
+            assertEquals(5000.0f, actual.get("a_float_column") as Float)
+            assertEquals(6000.0f, actual.get("a_float_column2") as Float)
+            assertEquals(7000.03, actual.get("a_double_column") as Double)
+            assertEquals(8000.0, actual.get("a_double_column2") as Double)
+        }
+    }
+
+    @Test
     fun `should log TypeConversionFailures`() {
         val row = listOf(
             "str", "str2", "not an int", "2", "3", "4", "5.0", "6.0", "7.0", "8.0", "true", "false"
