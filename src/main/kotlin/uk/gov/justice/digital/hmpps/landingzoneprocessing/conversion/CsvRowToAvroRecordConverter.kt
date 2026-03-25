@@ -104,10 +104,10 @@ class CsvRowToAvroRecordConverter(
                 try {
                     when (actualType) {
                         Schema.Type.STRING -> resultRecord.put(columnName, stringVal)
-                        Schema.Type.INT -> resultRecord.put(columnName, stringVal.toInt())
-                        Schema.Type.LONG -> resultRecord.put(columnName, stringVal.toLong())
-                        Schema.Type.FLOAT -> resultRecord.put(columnName, stringVal.toFloat())
-                        Schema.Type.DOUBLE -> resultRecord.put(columnName, stringVal.toDouble())
+                        Schema.Type.INT -> resultRecord.put(columnName, stripCommas(stringVal).toInt())
+                        Schema.Type.LONG -> resultRecord.put(columnName, stripCommas(stringVal).toLong())
+                        Schema.Type.FLOAT -> resultRecord.put(columnName, stripCommas(stringVal).toFloat())
+                        Schema.Type.DOUBLE -> resultRecord.put(columnName, stripCommas(stringVal).toDouble())
                         Schema.Type.BOOLEAN -> resultRecord.put(columnName, stringVal.toBooleanStrict())
                         else -> {
                             val msg = "We do not support type $type for field $columnName"
@@ -126,6 +126,11 @@ class CsvRowToAvroRecordConverter(
             }
         }
         return SuccessfulConversion(resultRecord)
+    }
+
+    // Useful for handling CSV files that format numeric fields with commas
+    private fun stripCommas(value: String): String {
+        return value.replace(",", "")
     }
 
     private fun addDmsColumnsToRow(row: List<String>): List<String> {
