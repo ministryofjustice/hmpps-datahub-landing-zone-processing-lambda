@@ -4,7 +4,8 @@
 
 A lambda used for converting CSV files in the DataHub Landing Processing Zone to Parquet format in the Raw Zone.
 
-The Lambda parses the lambda payload and then for every file below the provided prefix:
+The Lambda parses the lambda payload and then for every file below the provided prefix (folder markers and empty
+objects are skipped, with a warning in the logs):
 1. Read the file as a CSV into memory
 2. Read the associated data contract avro schema
 3. Make all fields in the schema nullable so nulls can be allowed through

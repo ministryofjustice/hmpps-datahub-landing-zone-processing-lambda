@@ -51,7 +51,7 @@ class LandingZoneProcessingLambda : RequestHandler<MutableMap<String, Any>, Stri
         AwsS3Client().use { s3Client ->
             AwsStepFunctionsClient().use { stepFunctionsClient ->
 
-                val s3FileService = S3FileService(s3Client = s3Client)
+                val s3FileService = S3FileService(s3Client = s3Client, logger = context.logger)
 
                 val landingZoneProcessingService = LandingZoneProcessingService(
                     s3FileService = s3FileService,
@@ -61,7 +61,8 @@ class LandingZoneProcessingLambda : RequestHandler<MutableMap<String, Any>, Stri
                         csvToParquet = CsvToParquetBytesConverter(CsvRowToAvroRecordConverter(context.logger)),
                         logger = context.logger,
                         env = Env
-                    )
+                    ),
+                    logger = context.logger
                 )
 
                 landingZoneProcessingService.process(payload)

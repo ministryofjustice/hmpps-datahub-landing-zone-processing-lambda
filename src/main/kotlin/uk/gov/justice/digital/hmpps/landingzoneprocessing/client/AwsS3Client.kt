@@ -52,7 +52,7 @@ class AwsS3Client(private val s3: S3Client = S3Client.create()): AutoCloseable {
 
             val response = s3.listObjectsV2(request)
             files.addAll(response.contents())
-            continuationToken = response.continuationToken()
+            continuationToken = response.nextContinuationToken()
         } while (response.isTruncated)
         return files
     }

@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.landingzoneprocessing.service
 
+import com.amazonaws.services.lambda.runtime.LambdaLogger
+import com.amazonaws.services.lambda.runtime.logging.LogLevel.WARN
 import com.github.doyaaaaaken.kotlincsv.util.CSVFieldNumDifferentException
 import org.apache.avro.Schema.Type.*
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -29,7 +31,8 @@ class S3FileServiceTest {
     private val schemaFile = S3File("bucket2", "path/to/schema")
 
     private val mockS3 = mock<AwsS3Client>()
-    private val underTest = S3FileService(mockS3)
+    private val mockLogger = mock<LambdaLogger>()
+    private val underTest = S3FileService(mockS3, mockLogger)
 
     @Test
     fun `should read CSV from S3`() {
@@ -66,6 +69,17 @@ class S3FileServiceTest {
         )
 
         assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `should throw, naming the file, when there are fewer rows than the header rows to skip`() {
+        whenever(mockS3.toInputStream(anyString(), anyString())).thenReturn(toInputStream(""))
+
+        val exception = assertThrows(IllegalArgumentException::class.java) {
+            underTest.retrieveCsvRows(csvFile, numberOfHeaderRowsToSkips = 1, charSet = Charsets.UTF_8)
+        }
+
+        assertEquals("Configured to skip 1 header rows but s3://bucket1/path/to/csvFile has only 0 rows", exception.message)
     }
 
     @Test
@@ -212,6 +226,34 @@ class S3FileServiceTest {
             S3File("bucket1", "k2")
         )
         assertEquals(expected, result)
+    }
+
+    @Test
+    fun `should not list folder markers or empty files`() {
+        val s3Files = listOf(
+            S3Object.builder().key("prefix/").size(0).build(),
+            S3Object.builder().key("prefix/empty.csv").size(0).build(),
+            S3Object.builder().key("prefix/full.csv").size(100).build()
+        )
+        whenever(mockS3.listFiles(anyString(), anyString())).thenReturn(s3Files)
+
+        val result = underTest.listFiles(csvFile)
+
+        assertEquals(listOf(S3File("bucket1", "prefix/full.csv")), result)
+    }
+
+    @Test
+    fun `should log why a listed object is skipped`() {
+        val s3Files = listOf(
+            S3Object.builder().key("prefix/").size(0).build(),
+            S3Object.builder().key("prefix/empty.csv").size(0).build()
+        )
+        whenever(mockS3.listFiles(anyString(), anyString())).thenReturn(s3Files)
+
+        underTest.listFiles(csvFile)
+
+        verify(mockLogger, times(1)).log("Skipping s3://bucket1/prefix/ (0 bytes, last modified null) because it is a folder marker", WARN)
+        verify(mockLogger, times(1)).log("Skipping s3://bucket1/prefix/empty.csv (0 bytes, last modified null) because it is empty", WARN)
     }
 
     @Test

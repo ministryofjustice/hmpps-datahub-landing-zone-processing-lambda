@@ -10,6 +10,9 @@ data class S3File(
     val bucketName: String,
     val key: String
 ) {
+    val uri: String
+        get() = "s3://$bucketName/$key"
+
     companion object {
 
         fun inputFileFromLambdaPayload(payload: MutableMap<String, Any>): S3File {
