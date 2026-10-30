@@ -6,6 +6,7 @@ import org.apache.avro.SchemaBuilder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assumptions.assumeTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.mock
@@ -19,9 +20,8 @@ import uk.gov.justice.digital.hmpps.landingzoneprocessing.testhelpers.TestHelper
 import java.io.File
 
 /**
- * Runs a CSV file from local disk through the lambda's reading and conversion, for checking a file that failed.
- * Set LOCAL_CSV_PATH to the file to run it, otherwise it's skipped. Set LOCAL_SCHEMA_PATH to a contract's Avro
- * schema to convert it with that contract too.
+ * Runs a CSV file from local disk through the lambda's reading and conversion, for debugging a file that failed.
+ * See "Debugging a failed CSV file" in the README for how to run it.
  */
 class LocalCsvFileTest {
 
@@ -37,24 +37,31 @@ class LocalCsvFileTest {
     private val s3FileService = S3FileService(mockS3, logger)
     private val s3File = S3File("bucket", "domain/table/file.csv")
 
+    private lateinit var csvFile: File
+
+    @BeforeEach
+    fun requireLocalCsvFile() {
+        // These tests only run when you point them at a file. Without LOCAL_CSV_PATH, assumeTrue stops each test
+        // and JUnit reports it as skipped rather than failed, so they don't run in CI.
+        assumeTrue(localCsvPath != null, "LOCAL_CSV_PATH is not set")
+        csvFile = File(localCsvPath!!)
+    }
+
     @Test
     fun `should read the local CSV file`() {
-        val file = localCsvFile()
-        whenever(mockS3.toInputStream(anyString(), anyString())).thenReturn(file.inputStream())
+        whenever(mockS3.toInputStream(anyString(), anyString())).thenReturn(csvFile.inputStream())
 
         val rows = s3FileService.retrieveCsvRows(s3File, numberOfHeaderRowsToSkip, Charsets.UTF_8)
 
-        println("Read ${rows.size} data rows with ${rows.map { it.size }.distinct()} columns from ${file.name}")
+        println("Read ${rows.size} data rows with ${rows.map { it.size }.distinct()} columns from ${csvFile.name}")
         assertTrue(rows.isNotEmpty())
         assertEquals(1, rows.map { it.size }.distinct().size)
     }
 
     @Test
     fun `should convert the local CSV file to Parquet with an all-string schema`() {
-        val file = localCsvFile()
-        val header = file.inputStream().use { s3FileServiceReading(it) }.first()
-        val schema = allStringSchema(header)
-        whenever(mockS3.toInputStream(anyString(), anyString())).thenReturn(file.inputStream())
+        val schema = allStringSchema(readHeader())
+        whenever(mockS3.toInputStream(anyString(), anyString())).thenReturn(csvFile.inputStream())
         val rows = s3FileService.retrieveCsvRows(s3File, numberOfHeaderRowsToSkip, Charsets.UTF_8)
 
         val result = CsvToParquetBytesConverter(CsvRowToAvroRecordConverter(logger)).toParquetByteArray(schema, rows)
@@ -67,10 +74,10 @@ class LocalCsvFileTest {
 
     @Test
     fun `should convert the local CSV file to Parquet with a local contract`() {
-        val file = localCsvFile()
+        // This one also needs a contract, so it's skipped unless LOCAL_SCHEMA_PATH is set as well
         assumeTrue(localSchemaPath != null, "LOCAL_SCHEMA_PATH is not set")
         val schema = File(localSchemaPath!!).inputStream().use { Schema.Parser().parse(it) }
-        whenever(mockS3.toInputStream(anyString(), anyString())).thenReturn(file.inputStream())
+        whenever(mockS3.toInputStream(anyString(), anyString())).thenReturn(csvFile.inputStream())
         val rows = s3FileService.retrieveCsvRows(s3File, numberOfHeaderRowsToSkip, Charsets.UTF_8)
 
         val result = CsvToParquetBytesConverter(CsvRowToAvroRecordConverter(logger)).toParquetByteArray(schema, rows)
@@ -78,14 +85,9 @@ class LocalCsvFileTest {
         assertTrue(result is SuccessfulCsvToParquetBytesConversion, "Conversion failed: $result")
     }
 
-    private fun localCsvFile(): File {
-        assumeTrue(localCsvPath != null, "LOCAL_CSV_PATH is not set")
-        return File(localCsvPath!!)
-    }
-
-    private fun s3FileServiceReading(input: java.io.InputStream): List<List<String>> {
-        whenever(mockS3.toInputStream(anyString(), anyString())).thenReturn(input)
-        return s3FileService.retrieveCsvRows(s3File, 0, Charsets.UTF_8)
+    private fun readHeader(): List<String> {
+        whenever(mockS3.toInputStream(anyString(), anyString())).thenReturn(csvFile.inputStream())
+        return s3FileService.retrieveCsvRows(s3File, 0, Charsets.UTF_8).first()
     }
 
     private fun allStringSchema(header: List<String>): Schema {
