@@ -57,7 +57,7 @@ class LandingZoneProcessingServiceIT {
         // Stub retrieving the Avro schema
         whenever(mockS3Client.toInputStream(SCHEMA_REG_BUCKET, PRISONS_SCHEMA_KEY)).thenReturn(javaClass.getResourceAsStream(PRISONS_SCHEMA))
 
-        val s3FileService = S3FileService(mockS3Client)
+        val s3FileService = S3FileService(mockS3Client, mockLogger)
         val underTest = LandingZoneProcessingService(
             s3FileService,
             mockStepFunctionService,
@@ -66,7 +66,8 @@ class LandingZoneProcessingServiceIT {
                 CsvToParquetBytesConverter(CsvRowToAvroRecordConverter(mockLogger)),
                 mockLogger,
                 mockEnv
-            )
+            ),
+            mockLogger
         )
 
         val payload = jsonLambdaPayloadFromResources("json-lambda-payloads/integration-test.json")

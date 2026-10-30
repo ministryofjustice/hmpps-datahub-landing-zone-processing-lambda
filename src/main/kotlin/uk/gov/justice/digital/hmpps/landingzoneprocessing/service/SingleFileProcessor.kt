@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.landingzoneprocessing.service
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger
+import com.amazonaws.services.lambda.runtime.logging.LogLevel.WARN
 import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.Env
 import uk.gov.justice.digital.hmpps.landingzoneprocessing.Env.CHARSET_ENV_KEY
@@ -39,19 +40,20 @@ class SingleFileProcessor(
     private val logCsv = env.get(LOG_CSV_ENV_KEY).toBooleanStrict()
 
     fun processFile(sourceFile: S3File) {
+        val schemaFile = avroSchemaFileFromInputFileKey(schemaRegistryBucketName, sourceFile.key)
+        val outputFile = outputFileFromInputFileKey(outputBucketName, sourceFile.key)
+
+        logger.log("Input file is ${sourceFile.uri}, charset is $charset and will skip $numberOfHeaderRowsToSkip rows")
+        logger.log("Avro schema is ${schemaFile.uri}")
+        logger.log("Output file will be ${outputFile.uri}")
+
         logger.log("Retrieving CSV data")
         val csvRows = s3FileService.retrieveCsvRows(sourceFile, numberOfHeaderRowsToSkip, charset)
+        logger.log("Retrieved ${csvRows.size} data rows")
 
         if (logCsv) {
             logCsvRows(csvRows)
         }
-
-        val schemaFile = avroSchemaFileFromInputFileKey(schemaRegistryBucketName, sourceFile.key)
-        val outputFile = outputFileFromInputFileKey(outputBucketName, sourceFile.key)
-
-        logger.log("Input file is ${sourceFile.bucketName}/${sourceFile.key}, charset is $charset and will skip $numberOfHeaderRowsToSkip rows")
-        logger.log("Avro schema is ${schemaFile.bucketName}/${schemaFile.key}")
-        logger.log("Output file will be ${outputFile.bucketName}/${outputFile.key}")
 
         logger.log("Retrieving avro schema")
         val avroSchema = s3FileService.retrieveSchema(schemaFile)
@@ -60,16 +62,16 @@ class SingleFileProcessor(
 
         when (maybeParquetBytes) {
             is SuccessfulCsvToParquetBytesConversion -> {
-                logger.log("Writing Parquet data")
+                logger.log("Writing ${maybeParquetBytes.bytes.size} bytes of Parquet data to ${outputFile.uri}")
                 s3FileService.writeBytes(maybeParquetBytes.bytes, outputFile)
-                logger.log("Deleting source CSV file")
+                logger.log("Deleting source CSV file ${sourceFile.uri}")
                 s3FileService.deleteFile(sourceFile)
             }
 
             is FailedCsvToParquetBytesConversion -> {
                 val violationsFile =
                     violationsFileFromInputFileKey(violationsBucketName, violationsBucketPath, sourceFile.key)
-                logger.log("Violation: Moving source file $sourceFile to $violationsFile")
+                logger.log("Violation: Moving source file ${sourceFile.uri} to ${violationsFile.uri}. Cause: ${maybeParquetBytes.cause}", WARN)
                 s3FileService.moveFile(sourceFile, violationsFile)
             }
         }
